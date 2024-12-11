@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>数据分析可视化平台</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color-1: #667eea;
+            --bg-color-2: #764ba2;
+            --bg-color-3: #6a11cb;
+            --bg-color-4: #2575fc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes liquidWave {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-10px) rotate(5deg);
+            }
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(
+                -45deg, 
+                var(--bg-color-1), 
+                var(--bg-color-2), 
+                var(--bg-color-3), 
+                var(--bg-color-4)
+            );
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #ffffff;
+            perspective: 1000px;
+        }
+
+        .main-wrapper {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+
+        .content-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .upload-section, .analysis-results {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .analysis-results {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stats-section, .visualization-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stats-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-images {
+            display: flex;
+            gap: 15px;
+        }
+
+        .result-images img {
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-wrapper {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: none;
+            }
+
+            .analysis-results {
+                flex-direction: column;
+            }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .sidebar, .content-area, .upload-section, .analysis-results {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar:hover, .content-area:hover, .upload-section:hover, .analysis-results:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .sample-data-item {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sample-data-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg, 
+                transparent, 
+                rgba(255,255,255,0.2), 
+                transparent
+            );
+            transition: all 0.5s ease;
+        }
+
+        .sample-data-item:hover::after {
+            left: 100%;
+        }
+
+        .collapsible-header {
+            background: rgba(255,255,255,0.1);
+            transition: background 0.3s ease;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .stats-table th, .stats-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .stats-table th {
+            background-color: #f2f2f2;
+        }
+        .result-images {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        .result-images img {
+            flex: 1;
+            max-width: 50%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        .result-images img:hover {
+            transform: scale(1.05);
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            width: 300px;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 10px;
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            padding: 5px;
+            font-size: 0.9em;
+        }
+        .upload-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .upload-btn, .analyze-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn {
+            background-color: rgba(52, 152, 219, 0.7);
+            color: white;
+        }
+
+        .analyze-btn {
+            background-color: rgba(46, 204, 113, 0.7);
+            color: white;
+        }
+
+        .analyze-btn:disabled {
+            background-color: rgba(189, 195, 199, 0.7);
+            cursor: not-allowed;
+        }
+
+        .file-info {
+            margin-top: 10px;
+            color: rgba(255,255,255,0.7);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-info i {
+            font-size: 1.2em;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .username {
+            color: white;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            color: #ff6b6b;
+        }
+
+        .chart-carousel {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chart-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .chart-slide img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .carousel-controls {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            z-index: 10;
+        }
+
+        .carousel-control {
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .carousel-control:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background-color: #4CAF50; /* 绿色背景 */
+            border: none;
+            color: white; /* 白色字体 */
+            padding: 15px 32px; /* 内边距 */
+            text-align: center;
+            text-decoration: none; /* 去掉下划线 */
+            display: inline-block;
+            font-size: 16px; /* 字体大小 */
+            margin: 4px 2px;
+            cursor: pointer; /* 鼠标指针 */
+            border-radius: 8px; /* 圆角 */
+            transition: background-color 0.3s; /* 背景颜色过渡 */
+        }
+
+        .btn:hover {
+            background-color: #45a049; /* 悬停时的背景颜色 */
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载遮罩 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-container">
+            <h3 id="loading-title">正在加载数据集</h3>
+            <div class="loading-spinner"></div>
+            <div class="progress-bar">
+                <span id="progress-bar-fill" class="progress-bar-fill" style="width: 0%"></span>
+            </div>
+            <p id="loading-details">准备加载...</p>
+        </div>
+    </div>
+
+    <!-- 用户信息和退出按钮 -->
+    <div class="user-info">
+        <span class="username">{{ username }}</span>
+        <a href="{{ url_for('logout') }}" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> 退出
+        </a>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-wrapper">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sample-datasets">
+                <h3>
+                    <i class="fas fa-database"></i> 示例数据集
+                </h3>
+                <div class="sample-data-item" onclick="loadSampleDataset('iris')">
+                    <i class="fas fa-flower"></i> 鸢尾花数据集
+                </div>
+                <div class="sample-data-item" onclick="loadSampleDataset('california_housing')">
+                    <i class="fas fa-home"></i> 加州房价数据集
+                </div>
+                <div class="sample-data-item" onclick="loadSampleDataset('diabetes')">
+                    <i class="fas fa-heartbeat"></i> 糖尿病数据集
+                </div>
+            </div>
+            
+            <div class="real-time-stats">
+                <h3>
+                    <i class="fas fa-chart-line"></i> 实时统计
+                </h3>
+                <div id="real-time-stats-container">
+                    <p id="total-analysis"></p>
+                    <p id="avg-processing-time"></p>
+                    <p id="last-file-size"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 内容区 -->
+        <div class="content-area">
+            <!-- 上传区域 -->
+            <div class="upload-section">
+                <h2>
+                    <i class="fas fa-upload"></i> 数据上传
+                </h2>
+                <div class="file-upload-container">
+                    <input type="file" id="fileInput" accept=".csv" style="display: none;" onchange="updateFileName(this)">
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-file-upload"></i> 选择CSV文件
+                    </button>
+                    
+                    <div id="file-info" class="file-info"></div>
+                    
+                    <!-- 进度条容器 -->
+                    <div id="progress-container" class="progress-container" style="display:none;">
+                        <div id="progress-bar" class="progress-bar"></div>
+                        <div id="progress-text" class="progress-text">准备上传...</div>
+                    </div>
+                    
+                    <button id="analyze-btn" class="analyze-btn" onclick="uploadFile()" disabled>
+                        <i class="fas fa-chart-line"></i> 开始分析
+                    </button>
+                </div>
+            </div>
+
+            <!-- 分析结果 -->
+            <div id="analysis-results" class="analysis-results" style="display: none;">
+                <div class="stats-section">
+                    <h3>
+                        <i class="fas fa-chart-bar"></i> 统计信息
+                    </h3>
+                    <div id="stats-container" class="stats-container">
+                        <table id="stats-table" class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>列名</th>
+                                    <th>统计值</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stats-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="visualization-section">
+                    <div id="analysis-results" style="display: none;">
+                        <div class="stats-container">
+                            <!-- 统计信息将动态插入此处 -->
+                        </div>
+                        
+                        <div id="chart-carousel" class="chart-carousel">
+                            <div class="chart-wrapper">
+                                <!-- 图表将动态插入此处 -->
+                            </div>
+                        </div>
+                        
+                        <div id="carousel-controls" class="carousel-controls">
+                            <!-- 轮播控制按钮将动态插入此处 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="button-container">
+                <a href="/visualize" class="btn btn-primary">可视化数据</a>
+                <a href="/about" class="btn btn-secondary">关于我们</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateFileName(input) {
+            // 安全检查：确保输入和相关元素存在
+            if (!input || !input.files || !input.files.length) {
+                console.warn('未选择文件');
+                return;
+            }
+
+            const file = input.files[0];
+            const fileInfo = document.getElementById('file-info');
+            const analyzeBtn = document.getElementById('analyze-btn');
+
+            // 再次检查元素是否存在
+            if (!fileInfo || !analyzeBtn) {
+                console.error('文件信息或分析按钮元素未找到');
+                return;
+            }
+
+            try {
+                // 显示文件信息
+                fileInfo.innerHTML = `
+                    <i class="fas fa-file-csv"></i> 
+                    ${file.name} (${(file.size / 1024).toFixed(2)} KB)
+                `;
+
+                // 启用分析按钮
+                analyzeBtn.disabled = false;
+            } catch (error) {
+                console.error('更新文件名时发生错误:', error);
+                fileInfo.innerHTML = '文件信息显示失败';
+                analyzeBtn.disabled = true;
+            }
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            // 安全检查：确保有文件选择
+            if (!event.target.files || !event.target.files.length) {
+                console.warn('未选择文件');
+                return;
+            }
+
+            const file = event.target.files[0];
+            const fileInfo = document.getElementById('file-info');
+            const analyzeBtn = document.getElementById('analyze-btn');
+
+            // 再次检查元素是否存在
+            if (!fileInfo || !analyzeBtn) {
+                console.error('文件信息或分析按钮元素未找到');
+                return;
+            }
+
+            try {
+                // 显示文件信息
+                fileInfo.innerHTML = `
+                    <i class="fas fa-file-csv"></i> 
+                    ${file.name} (${(file.size / 1024).toFixed(2)} KB)
+                `;
+
+                // 启用分析按钮
+                analyzeBtn.disabled = false;
+            } catch (error) {
+                console.error('更新文件信息时发生错误:', error);
+                fileInfo.innerHTML = '文件信息显示失败';
+                analyzeBtn.disabled = true;
+            }
+        });
+
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请先选择CSV文件');
+                return;
+            }
+
+            // 安全检查：确保所有必要的元素都存在
+            const requiredElements = [
+                'progress-container', 
+                'progress-bar', 
+                'progress-text', 
+                'analysis-results', 
+                'analyze-btn'
+            ];
+
+            const elements = {};
+            let missingElements = false;
+
+            for (const elementId of requiredElements) {
+                const element = document.getElementById(elementId);
+                if (!element) {
+                    console.error(`元素未找到: ${elementId}`);
+                    missingElements = true;
+                }
+                elements[elementId] = element;
+            }
+
+            if (missingElements) {
+                alert('页面元素加载异常，请刷新重试');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 重置进度和结果
+            const progressContainer = elements['progress-container'];
+            const progressBar = elements['progress-bar'];
+            const progressText = elements['progress-text'];
+            const analysisResults = elements['analysis-results'];
+            const analyzeBtn = elements['analyze-btn'];
+
+            // 禁用分析按钮
+            analyzeBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.textContent = '准备上传...';
+            analysisResults.style.display = 'none';
+
+            // 重新启用服务器推送进度
+            const eventSource = new EventSource('/progress');
+            let progressComplete = false;
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Progress received:', data);  // 调试日志
+                    progressBar.style.width = `${data.progress}%`;
+                    progressText.textContent = data.message;
+
+                    if (data.progress === 100) {
+                        progressComplete = true;
+                        eventSource.close();
+                    }
+                } catch (error) {
+                    console.error('Progress parsing error:', error);
+                    eventSource.close();
+                }
+            };
+
+            eventSource.onerror = function(error) {
+                console.error('EventSource failed:', error);
+                eventSource.close();
+            };
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || '上传失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 等待进度完成
+                return new Promise((resolve, reject) => {
+                    const maxWait = 10000;  // 最大等待10秒
+                    const startTime = Date.now();
+
+                    const checkProgress = () => {
+                        if (progressComplete) {
+                            resolve(data);
+                        } else if (Date.now() - startTime > maxWait) {
+                            reject(new Error('进度显示超时'));
+                        } else {
+                            setTimeout(checkProgress, 100);
+                        }
+                    };
+
+                    checkProgress();
+                });
+            })
+            .then(data => {
+                // 重置进度条
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+                analyzeBtn.disabled = false;
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                displayAnalysisResults(data);
+            })
+            .catch(error => {
+                console.error('上传错误:', error);
+                
+                // 重置进度条
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+                analyzeBtn.disabled = false;
+
+                // 显示详细错误信息
+                alert(`上传失败：${error.message || '未知错误'}`);
+            });
+        }
+
+        function toggleCollapsible(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.fa-chevron-down');
+            
+            content.classList.toggle('active');
+            
+            if (content.classList.contains('active')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function showLoadingOverlay(title) {
+            const overlay = document.getElementById('loading-overlay');
+            const titleEl = document.getElementById('loading-title');
+            const detailsEl = document.getElementById('loading-details');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+
+            titleEl.textContent = title;
+            detailsEl.textContent = '准备加载...';
+            progressBarFill.style.width = '0%';
+            overlay.style.display = 'flex';
+        }
+
+        function updateLoadingProgress(progress, details) {
+            const detailsEl = document.getElementById('loading-details');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+
+            progressBarFill.style.width = `${progress}%`;
+            detailsEl.textContent = details;
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.style.display = 'none';
+        }
+
+        function simulateDataLoading(dataset) {
+            showLoadingOverlay(`正在加载 ${dataset} 数据集`);
+
+            const steps = [
+                { progress: 20, text: '初始化数据加载' },
+                { progress: 40, text: '下载数据集' },
+                { progress: 60, text: '解析数据' },
+                { progress: 80, text: '验证数据完整性' },
+                { progress: 100, text: '数据加载完成' }
+            ];
+
+            let currentStep = 0;
+
+            const loadingInterval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    updateLoadingProgress(step.progress, step.text);
+                    currentStep++;
+                } else {
+                    clearInterval(loadingInterval);
+                    setTimeout(() => {
+                        hideLoadingOverlay();
+                        loadSampleData(dataset);
+                    }, 500);
+                }
+            }, 800);
+        }
+
+        function loadSampleData(dataset) {
+            fetch(`/sample_dataset/${dataset}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(`数据集加载失败: ${data.error}`);
+                        return;
+                    }
+
+                    // 展示数据集名称
+                    document.getElementById('dataset-name').innerHTML = `<h4>当前数据集: ${dataset}</h4>`;
+
+                    // 更新统计信息表格
+                    const statsBody = document.getElementById('stats-body');
+                    statsBody.innerHTML = ''; // 清空之前的数据
+                    const statsData = data.stats;
+                    
+                    for (const [stat, values] of Object.entries(statsData)) {
+                        for (const [column, value] of Object.entries(values)) {
+                            const row = statsBody.insertRow();
+                            row.insertCell(0).textContent = `${stat} - ${column}`;
+                            row.insertCell(1).textContent = value.toFixed(2);
+                        }
+                    }
+
+                    // 更新图像
+                    document.getElementById('correlation-heatmap').src = `/results/${data.correlation_heatmap}`;
+                    document.getElementById('boxplot').src = `/results/${data.boxplot}`;
+
+                    // 显示分析结果区域
+                    document.getElementById('analysis-results').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('加载数据集时发生错误');
+                });
+        }
+
+        function updateRealTimeStats() {
+            const totalAnalysisEl = document.getElementById('total-analysis');
+            const avgProcessingTimeEl = document.getElementById('avg-processing-time');
+            const lastFileSizeEl = document.getElementById('last-file-size');
+
+            // 安全检查：确保元素存在
+            if (!totalAnalysisEl || !avgProcessingTimeEl || !lastFileSizeEl) {
+                console.warn('实时统计元素未找到');
+                return;
+            }
+
+            const totalAnalysis = Math.floor(Math.random() * 1000);
+            const avgProcessingTime = (Math.random() * 500).toFixed(2);
+            const lastFileSize = (Math.random() * 100).toFixed(2);
+
+            totalAnalysisEl.textContent = totalAnalysis;
+            avgProcessingTimeEl.textContent = `${avgProcessingTime} ms`;
+            lastFileSizeEl.textContent = `${lastFileSize} KB`;
+        }
+
+        setInterval(updateRealTimeStats, 5000);
+        updateRealTimeStats();
+
+        // 新增分析结果展示函数
+        function displayAnalysisResults(data) {
+            console.log('分析结果:', data);
+            
+            const analysisResults = document.getElementById('analysis-results');
+            const chartCarousel = document.getElementById('chart-carousel');
+            const statsContainer = document.querySelector('.stats-container');
+            
+            // 安全检查
+            if (!analysisResults || !chartCarousel || !statsContainer) {
+                console.error('❌ 关键元素未找到');
+                return;
+            }
+
+            // 清空现有内容
+            chartCarousel.innerHTML = '';
+            statsContainer.innerHTML = '';
+            analysisResults.style.display = 'block';
+
+            // 检查是否有错误
+            if (data.error) {
+                analysisResults.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+
+            // 显示统计信息
+            let statsHTML = '<h4>数据统计摘要</h4>';
+            if (data.stats) {
+                for (const [column, stats] of Object.entries(data.stats)) {
+                    statsHTML += `
+                        <div class="stat-item">
+                            <strong>${column}:</strong>
+                            平均值: ${stats.mean}, 
+                            中位数: ${stats.median}, 
+                            标准差: ${stats.std}, 
+                            最小值: ${stats.min}, 
+                            最大值: ${stats.max}
+                        </div>
+                    `;
+                }
+            }
+            statsContainer.innerHTML = statsHTML;
+
+            // 初始化图表轮播
+            if (data.chart_base64_list && data.chart_base64_list.length > 0) {
+                initChartCarousel(data.chart_base64_list);
+            } else {
+                console.warn('⚠️ 未找到图表数据');
+                analysisResults.innerHTML += '<p>未生成图表，请检查数据</p>';
+            }
+        }
+
+        function initChartCarousel(chartBase64List) {
+            const chartCarousel = document.getElementById('chart-carousel');
+            const carouselControls = document.getElementById('carousel-controls');
+            const chartWrapper = chartCarousel.querySelector('.chart-wrapper');
+            const analysisResults = document.getElementById('analysis-results');
+            
+            // 安全检查
+            if (!chartCarousel || !carouselControls || !chartWrapper || !analysisResults) {
+                console.error('❌ 轮播容器、控制器或分析结果区域未找到');
+                return;
+            }
+
+            // 显示分析结果区域
+            analysisResults.style.display = 'block';
+
+            // 清空现有内容
+            chartWrapper.innerHTML = '';
+            carouselControls.innerHTML = '';
+
+            // 创建轮播项目
+            chartBase64List.forEach((base64, index) => {
+                const slide = document.createElement('div');
+                slide.classList.add('chart-slide');
+                slide.dataset.index = index;
+                slide.style.display = 'none';  // 初始隐藏所有幻灯片
+
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${base64}`;
+                img.alt = `分析图表 ${index + 1}`;
+                img.classList.add('img-fluid');
+
+                slide.appendChild(img);
+                chartWrapper.appendChild(slide);
+            });
+
+            // 显示第一张幻灯片
+            const slides = chartWrapper.querySelectorAll('.chart-slide');
+            if (slides.length > 0) {
+                slides[0].style.display = 'block';
+            }
+
+            // 添加轮播控制按钮
+            const prevButton = document.createElement('button');
+            prevButton.classList.add('carousel-control', 'carousel-control-prev');
+            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevButton.onclick = () => changeSlide(-1);
+
+            const nextButton = document.createElement('button');
+            nextButton.classList.add('carousel-control', 'carousel-control-next');
+            nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextButton.onclick = () => changeSlide(1);
+
+            carouselControls.appendChild(prevButton);
+            carouselControls.appendChild(nextButton);
+
+            // 轮播状态
+            let currentSlide = 0;
+
+            function changeSlide(direction) {
+                const slides = chartWrapper.querySelectorAll('.chart-slide');
+                
+                // 隐藏当前幻灯片
+                slides[currentSlide].style.display = 'none';
+
+                // 更新幻灯片索引
+                currentSlide += direction;
+                
+                // 处理循环
+                if (currentSlide >= slides.length) {
+                    currentSlide = 0;
+                }
+                if (currentSlide < 0) {
+                    currentSlide = slides.length - 1;
+                }
+
+                // 显示新的幻灯片
+                slides[currentSlide].style.display = 'block';
+            }
+        }
+    </script>
+    <script>
+        // 动态颜色变化脚本
+        function updateDynamicColors() {
+            const root = document.documentElement;
+            const hue = Math.floor(Math.random() * 360);
+            
+            root.style.setProperty('--bg-color-1', `hsl(${hue}, 70%, 60%)`);
+            root.style.setProperty('--bg-color-2', `hsl(${(hue + 120) % 360}, 70%, 60%)`);
+            root.style.setProperty('--bg-color-3', `hsl(${(hue + 240) % 360}, 70%, 60%)`);
+            root.style.setProperty('--bg-color-4', `hsl(${(hue + 180) % 360}, 70%, 60%)`);
+        }
+
+        // 每隔一段时间更新颜色
+        setInterval(updateDynamicColors, 10000);
+        updateDynamicColors(); // 初始化颜色
+    </script>
+</body>
+</html>
